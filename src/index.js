@@ -21,7 +21,6 @@ mongoClient.connect().then( () => {
 
 app.post('/sign-up', async (req, res) => {
     const user = req.body;
-    console.log(user)
 
     try {
         const userDB = await db.collection('users').find({email: user.email}).toArray();
@@ -40,7 +39,33 @@ app.post('/sign-up', async (req, res) => {
     }
 });
 
+app.post('/sign-in', async (req, res) => {
+    const { email, password } = req.body;
 
+    try {
+        const user = await db.collection('users').findOne({email});
+
+        if (user && bcrypt.compareSync(password, user.password)) {
+            
+            return res.status(200).send(user);
+        }
+
+        res.sendStatus(404)
+    } catch (error) {
+        res.status(500).send(error);
+    }
+})
+
+
+
+app.get('/', async (req, res) => {
+    try {
+        const user = await db.collection('users').find().toArray();
+        res.send(user);
+    } catch (error) {
+        res.sendStatus(500)
+    }
+});
 
 
 
