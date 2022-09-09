@@ -57,15 +57,23 @@ app.post('/sign-in', async (req, res) => {
 
             //console.log(user)
             
-            let a = await db.collection('sessions').insertOne({
+            await db.collection('sessions').insertOne({
                 userId: user._id,
                 name: user.name,
                 token
-            })
-            
-            console.log(a)
+            });
 
-            return res.status(200).send(user);
+            const userSession = await db
+                .collection('sessions')
+                .findOne(
+                    {
+                        userId: user._id
+                    }
+                )
+            
+            console.log(userSession)
+
+            return res.status(200).send(userSession);
         }
 
         res.sendStatus(404)
@@ -86,16 +94,29 @@ app.get('/', async (req, res) => {
         if (!userSession) return res.status(404).send("Não está logado");
         
         const user = await db.collection('users').findOne({_id: ObjectId (userSession.userId)});
+
+        let transactions = user.extract.map(obj => {
+            if (obj.type === 'debit') {
+                return ({
+                    ...obj,
+                    value: obj.value * -1
+                })
+            }
+            return obj;
+        })
             
         delete user.email;
         delete user.password;
         
-        res.send(user);
+        res.send({
+            _id: ObjectId(user._id),
+            name: user.name,
+            extract: transactions
+        });
     } catch (error) {
         res.sendStatus(500)
     }
 });
-
 
 app.post('/novaentrada', async (req, res) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
