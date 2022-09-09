@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import bcrypt from 'bcrypt';
+import { v4 as uuid } from 'uuid';
 
 dotenv.config();
 
@@ -23,15 +24,21 @@ app.post('/sign-up', async (req, res) => {
     const user = req.body;
 
     try {
-        const userDB = await db.collection('users').find({email: user.email}).toArray();
+        const userDB = await db.collection('users').findOne({email: user.email});
 
-        if (userDB.length !== 0) {
+        if (userDB) {
             return res.status(409).send('Já existe um usuário com esse e-mail');
         }
 
         const passwordHash = bcrypt.hashSync(user.password, 10);
 
-        const newUser = await db.collection('users').insertOne({...user, password: passwordHash});
+        const newUser = await db
+            .collection('users')
+            .insertOne({
+                ...user, 
+                password: passwordHash, 
+                extract: []
+            });
 
         res.status(201).send(newUser);
     } catch (error) {
@@ -46,7 +53,18 @@ app.post('/sign-in', async (req, res) => {
         const user = await db.collection('users').findOne({email});
 
         if (user && bcrypt.compareSync(password, user.password)) {
+            const token = uuid();
+
+            //console.log(user)
             
+            let a = await db.collection('sessions').insertOne({
+                userId: user._id,
+                name: user.name,
+                token
+            })
+            
+            console.log(a)
+
             return res.status(200).send(user);
         }
 
@@ -54,17 +72,38 @@ app.post('/sign-in', async (req, res) => {
     } catch (error) {
         res.status(500).send(error);
     }
-})
-
-
+});
 
 app.get('/', async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) return res.status(404).send('Faltou o token !');
+    
+
     try {
-        const user = await db.collection('users').find().toArray();
+        const userSession = await db.collection('sessions').findOne({token: token})
+        
+        if (!userSession) return res.status(404).send("Não está logado");
+        
+        const user = await db.collection('users').findOne({_id: ObjectId (userSession.userId)});
+            
+        delete user.email;
+        delete user.password;
+        
         res.send(user);
     } catch (error) {
         res.sendStatus(500)
     }
+});
+
+app.get('/sessions', async (req, res) => {
+    let a = await db.collection('sessions').find().toArray();
+    res.send(a);
+});
+
+app.get('/users', async (req, res) => {
+    let a = await db.collection('users').find().toArray();
+    res.send(a);
 });
 
 
