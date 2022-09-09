@@ -124,6 +124,35 @@ app.post('/novaentrada', async (req, res) => {
     }
 });
 
+app.post('/novasaida', async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if(!token) return res.sendStatus(401);
+
+    const newEntry = req.body;
+
+    try {
+        const user = await db.collection('users').findOne({_id: ObjectId(newEntry.userId)});
+
+        await db
+        .collection('users')
+        .updateOne({
+            _id: ObjectId(newEntry.userId)},
+            {$set: { extract: 
+                [ 
+                    ...user.extract, 
+                    newEntry 
+                ]
+            }}
+        );
+
+        res.sendStatus(200);
+    } catch (error) {
+        res.send(error.message)
+    }
+});
+
+
+
 
 
 app.get('/sessions', async (req, res) => {
