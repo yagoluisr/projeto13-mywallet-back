@@ -4,9 +4,7 @@ import mongo from '../db/db.js';
 let db = await mongo();
 
 async function getUserData (req, res) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!token) return res.sendStatus(404);
+    const token = res.locals.token
     
     try {
         const userSession = await db
@@ -56,10 +54,6 @@ async function getUserData (req, res) {
 }
 
 async function insertEntry (req, res){
-    const token = req.headers.authorization?.replace('Bearer ', '');
-
-    if(!token) return res.sendStatus(401);
-
     const newEntry = req.body;
 
     try {
@@ -92,10 +86,6 @@ async function insertEntry (req, res){
 }
 
 async function insertOutput (req, res) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-
-    if(!token) return res.sendStatus(401);
-
     const newEntry = req.body;
 
     try {
