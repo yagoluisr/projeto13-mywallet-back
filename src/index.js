@@ -1,24 +1,26 @@
 import express from 'express';
 import cors from 'cors';
-import { signIn, signUp } from './Controllers/authController.js';
-import { getUserData, insertEntry, insertOutput } from './Controllers/userController.js';
+
+import authRouter from './Routes/authRoutes.js';
+import userRouter from './Routes/userRoutes.js';
 
 
 const app = express();
+const router = express.Router();
 
 app.use(cors());
 app.use(express.json());
+app.use(authRouter,userRouter)
 
 
-app.post('/sign-up', signIn);
+//Rotas de autenticação
+app.post(authRouter);
+app.post(authRouter);
 
-app.post('/sign-in', signUp);
-
-app.get('/', getUserData);
-
-app.post('/novaentrada', insertEntry);
-
-app.post('/novasaida', insertOutput);
+//Rotas do usuário
+app.get(userRouter);
+app.post(userRouter);
+app.post(userRouter);
 
 
 
